@@ -1,0 +1,1328 @@
+---
+title: "ML_Course"
+author: "Joaquim Aumatell Escabias"
+date: "22/9/2021"
+output: html_document
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Machine learning in R
+
+Course of machine learning from :
+<https://alison.com/es/curso/diploma-en-machine-learning-con-estudio-r>
+
+## Module 2
+
+```{r cars}
+
+#OPEN URL
+browseURL("https://cran.r-project.org/web/views/")
+
+#pakage mangement
+install.packages("LiblineaR")
+
+require("LiblineaR")
+
+detach("package:LiblineaR",unload = TRUE)
+remove.packages("LiblineaR")
+
+#help
+? ggplot2
+
+
+# Inbuilt datasets
+data()
+library(help= "datasets")
+? iris
+str(iris)
+iris
+data("iris")
+
+# Manual data entry
+
+x1<- 1:10
+x2<-c(2,5,7,4)
+x3<-seq(5,50, by = 5)
+x4<-scan(n=3)
+
+# Importing data from CSV or text files
+
+#Product<-read.table("Path", header = TRUE, sep = "\t") 
+#str(Product)
+#Customers<- read.csv("PATH", header = TRUE)
+#View(Customers)
+
+# Barplots in R
+
+Y<-table(iris$Species)
+View(Y)
+barplot(Y)
+barplot(height = Y[order(Y)], horiz = TRUE, col = c("red","green","blue"),border = NA, main = "Title", xlab = "xlab")
+
+colors()
+
+png(filename = "Path")
+barplot()
+dev.off()
+
+# Histogrms
+
+hist(iris$Sepal.Length, breaks = 50)
+hist(iris$Sepal.Length, breaks = c(4,5,6,7,8,9), freq = TRUE, col=c("blue","red","orange","green","yellow"))
+
+
+
+
+
+```
+
+## Module 3 Statistics
+
+```{r apressure}
+plot(pressure)
+```
+
+## Module 4 Introduction to machine learning
+
+1.Problem formulation convert the problem to statistical problem define
+dependent and independent variables identify whether we want to predict
+or to infer
+
+2.  Data tyding clear table format (columns variables , rows samples)
+
+3.  Pre-processing Filter data aggregate values missing value treatment
+    Variable transformation Variable reduction
+
+4.  Test-train split no overlap between train and test sets (70-80%,
+    30-20%)
+
+5.  Model training
+
+6.Performance metrics and validation In Sample error ( errors inside
+training data) Out Sample error (errors on test set)
+
+7.Prediction Setup pipeline Improve by monitoring your model over time
+try automate
+
+## Module 5 Data pre-processing and preparation
+
+1.  Primary research
+
+<!-- -->
+
+a.  discussions
+b.  dry run
+
+2.Secondary research a. Reports and studies b. Previous works
+
+### Data exploration
+
+identify data needed Plan data request a.Internal ( from organization
+involved) b. Collected from external sources Quality checks
+
+### Data and data dictionary
+
+1.  define predictors
+2.  Unique identifier
+3.  Foreign keys (matching between tables)
+4.  Explanation of values in case of categorical variables
+
+### Importing dataset into R
+
+```{r Importdata}
+df<-read.csv("/home/quim/PycharmProjects/Machine learning/Complete ML in R/1. Linear Regression/House_Price.csv", header = TRUE)
+
+str(df)
+
+```
+
+### Univariate analysis
+
+Describe the variables \
+1. Central tendency (Mean , mode, median) \
+2. Dispersion (Range, SD, variation)
+
+```{r pressure}
+summary(df)
+```
+
+# Outlier treatment
+
+1.  capping and flooring (Q1-IQR*3//Q3+IQR*3)
+2.  Exponential smoothing
+3.  Sigma Approach
+
+```{r outlier_treatment}
+uv<-3*quantile(df$n_hot_rooms,0.99)
+df$n_hot_rooms[df$n_hot_rooms>uv]<-uv
+
+lv<- 0.3* quantile(df$rainfall, .01)
+df$rainfall[df$rainfall>lv]<-lv
+
+summary(df)
+```
+
+### Missing value Imputation
+
+Methods; \
+1. Impute with 0 \
+2. Impute with mean , median or mode (for categorical variables) \
+3. Segment based Imputation - identify relevant segments - Calculate
+mean, median , mode of segments - Impute the missing values according to
+the segments
+
+```{r pressurea}
+
+mean(df$n_hos_beds, na.rm = TRUE)
+which(is.na(df$n_hos_beds))
+df$n_hos_beds[is.na(df$n_hos_beds)]<- mean(df$n_hos_beds, na.rm = TRUE)
+which(is.na(df$n_hos_beds))
+
+
+```
+
+### Seasonality in Data
+
+reasons, weather, tourism... multiplication factor for the different
+seasons
+
+pop mean / season mean \> multiplication factor
+
+multiplication factor \* data of that concrete position
+
+### Bivariate analysis
+
+1.  Relationship
+
+-   Scatterplots (linear relationship? if not transform variables.)
+
+2.  Correlations
+
+-   Linear correlation quantifies the strength of the linear
+    relationship.
+-   If no correlation no tendency to get the effect modified one by the
+    other.
+-   Correlation is used to drop non-usable variable
+
+3.  Create new variables
+
+-   Using business knowledge and bivariate analysis to modify variable
+
+-   Use mean/Median of variables conveying similar type information
+
+-   Create ratio variable which are more relevant to business
+
+-   Transform variable by taking log, exponential, roots etc. 3.1
+    Transformation
+
+    -   for log data -- log(x+1)
+    -   for exp data -- e\^x
+    -   for xxxxxxxx -- x\^2 or x\^n
+
+```{r Variable_transformation1}
+
+pairs(~price+crime_rate, data = df)
+plot(df$price,df$crime_rate)
+df$crime_rate<-log(1+df$crime_rate)
+df$avg_dist<-(df$dist1+df$dist2+df$dist3+df$dist4)/4
+df2<-df[,-7:-10]
+df<- df2
+rm(df2)
+
+
+```
+
+4.  Non Usable Variable
+
+-   Single unique value
+-   Variables with low fill rate
+-   Variables with regulatory issue
+-   Variable with no business sense
+
+```{r Dummy_variable_creation}
+
+install.packages("dummies")
+library(dummies)
+
+df <- dummy.data.frame(df)
+df<-df[,-9]
+
+```
+
+### Correlation matrix
+
+Correlation: - statistical measure that indicates the extent to which
+two or ore variables fluctuate together.
+
+Correlation coefficient: \
+- Value to the relationship \
+- Correlation coefficients have a value between -1 and 1 \
+- A 0 means there is no relationship between the variables at all \
+- -1 and 1 mean perfect correlation (negative or positive)
+
+Correlation vs causation - Correlation doesn't imply causation
+
+Correlation matrix \
+- Table showing the correlation coefficients between variables \
+- Each cell in the table shows th correlation between two variables \
+- Correlation matrix is use s a way to summarize data, as an input into
+a more advanced analysis, and as a diagnostic for advanced analyses.
+
+Applications: \
+- Summarize large amounts of data where the goal is to see patterns. \
+- Identify collinearity in the data.
+
+```{r Correlation_matrix}
+
+cor(df)
+round(cor(df),2)
+df <- df[,-16]
+
+```
+
+## Module 6 Lineal regression models
+
+Linear regression is a linear approach to modeling the relationship
+between a dependent variables and independent variables.
+
+Questions: - Prediction question how accurate can predict given all
+variables and values - Inferential question How accurate can we estimate
+the effect of each of the variables
+
+1.  Basic equations and ordinary least squared method Y = B0 + B1*X
+    price= B0 + B1*num_rooms
+
+-   Estimating coefficients
+
+    -   Goal : Obtain B0 and B1
+    -   ei = yi - ŷi
+
+-   Residual: difference between the observed value and the estimted by
+    the linear model.
+
+-   Residual sum of squares (RSS) the least squares approah chosses B0
+    and B1 to minimize the RSS. Using some calculus, one can show that
+    the minimizers are
+
+B1=sum(xi-x)(yi-y)/sum(xi-x)\^2 B0 = y - B1x
+
+2.  Assessing Accuracy of predicted Coefficients
+
+Y= B0+B1\*X+E
+
+-   Standard error in coefficients
+
+    o\^2 is not known, but can be estimate from the data. This estimate
+    is known as the residual standard error (RSE)
+
+    RSE = sqroot(RSS/(n-2))
+
+    There is approximately a 95% chance that the interval [B1-2*SE(B1),
+    B1+2*SE(B1)]
+
+    will contain the true value of B1
+
+-   Hypothesis test
+
+    is there any relationship between X and Y Y = B0 + B1\*x if b1 is 0
+    there is no relationship Ho= There's no relationship between x and y
+    Ha = there's some relationship between X and y Ho: B1=0 Ha: B1!=0
+
+    To disapprove Ho, we calculate T statistics We also compute the
+    probability of observing ny value equal to /t/ or Larger Te call
+    this the probability p-value a small p-value means there is an
+    association between the predictor and the response (typically less
+    than 5% on 1%)
+
+3.  Assessing model accuracy - RSE and R Squared
+
+Quality of Fit RSE RSE is the average amount that the response will
+deviate from the true regression line. It's also considered as a measure
+of lack of fit of the model to the data.
+
+Quality of fit R\^2 Is the proportion of variance explained. Always
+takes on a value between 0 and 1 Is independent of the scale of Y.
+
+R\^2 = 1 - (Residual sum of squares / total sum of squares)
+
+```{r Simple_linear_regression}
+ simple_model <- lm(price~room_num, data = df)
+
+summary(simple_model)
+
+plot(df$room_num,df$price)
+abline(simple_model)
+
+```
+
+4.  Multiple linear regression
+
+Y= B0 + B1*X1 + B2*X2 ... + e
+
+-   F statistics
+
+Probability of wrongly classify B as significant if number of variables
+is large, there is very high chance that one of the B is wrongly
+classified.
+
+F = ((TSS -RSS)/p)/(RSS/(n-p-1))
+
+-   Interpreting the results for categorical variable intercepts and
+    p-values
+
+```{r multiple_linear_regression}
+
+multiple_model <- lm(price~., data=df)
+summary(multiple_model)
+
+```
+
+5.  Test train split
+
+Mean square error of new test data results
+
+Validation set approach 80:20 split (larg N)
+
+Leave one out cross validation leave one out on every training set
+
+K-Fold validation Divide the data in k sets we keep one testing and k1
+fo training
+
+6.  Bias Variance Trade-off Expected test error = E(bias) +
+    E(variance) + E(e)
+
+Bias Variance Trade-off Find the minimum of the sum of both
+
+```{r Test-Train_Split_in_R}
+install.packages("caTools")
+library(caTools)
+set.seed(0)
+
+split = sample.split(df, SplitRatio = 0.8)
+training_set <- subset(df,split ==TRUE)
+test_set<- subset(df, split== FALSE)
+
+lm_a <- lm(price~.,data = training_set)
+
+train_a<- predict(lm_a, training_set)
+test_a<- predict(lm_a, test_set)
+
+mean((training_set$price-train_a)^2)
+mean((test_set$price-test_a)^2)
+
+```
+
+## Module 7 Modelos de regression distintos de OLS
+
+Other linear models Y = B0 + B1X1 + B2X2... E RSS = e\^2 +e\^2 ....
+Alternatives for prediction accuracy and model interpretability
+
+-   Subset selection Instead of training the model on all variables, we
+    will be using a subset of available variables
+-   Shrinkage method : We will try to regularize (i.e. shrink the
+    coefficient of some variables towards zero)
+
+1.  Subset selection techniques
+
+Select the subset of variables the work \
+1. Best subset selection \
+- let M0 denote the null model with no predictors \
+- Mk being the models using k predictors an select the smallest RSS (
+probar totes les combinations possibles de 1 var, 2 var.... etc )\
+- Select a single model using adjusted R\^2 for each group pf models \
+- Select the better model among the selected using R²
+
+2.  Forward Step-wise selection
+
+-   M0 null model with no predictors
+-   Consider all pk models that augment the predictors Mk with one
+    additional predictor
+-   Choose the best among these p-k models and call it Mk+1. Here best
+    is defined as having smallest RSS or highest R²
+-   Select a single best model from among MO to Mp using adjusted R²
+
+3.  Backward Step-wise selection (Only if N\>num of variables)
+
+-   Let Mp denote the full model, witch contains all p predictors
+-   Consider all k models that contain all but one of the predictors in
+    Mk, for a total of k -1 predictors. -Choose the best among these k
+    models and call it Mk-1. Here bet is defined as having smallest RSS
+    or highest R²
+-   Select a single best model from among M0 to Mp using adjusted R²
+
+```{r Subset_selection}
+
+install.packages("leaps")
+library("leaps")
+
+# Subset selection techniques
+lm_best<-regsubsets(price~., data= df, nvmax = 15)
+summary(lm_best)
+summary(lm_best)$adjr2
+which.max(summary(lm_best)$adjr2)
+coef(lm_best,8)
+
+
+# Forward step-wise selection
+lm_fwd <- regsubsets(price~.,data = df, nvmax = 15, method = "forward")
+summary(lm_fwd)
+summary(lm_fwd)$adjr2
+which.max(summary(lm_fwd)$adjr2)
+coef(lm_fwd,8)
+
+
+# Backward step-wise selection
+lm_bkw <- regsubsets(price~.,data = df, nvmax = 15, method = "backward")
+summary(lm_bkw)
+summary(lm_bkw)$adjr2
+which.max(summary(lm_bkw)$adjr2)
+coef(lm_bkw,8)
+
+
+```
+
+4.  Shrinkage methods - Ridge Regression and the lasso
+
+Usually run both and select the on with better results.
+
+Regularize coefficients shrinks towards zero - Ridge Regression: Shrink
+the coefficients of variable towards zero by adding shrinkage penalty by
+Tuning parameter ( select a good lambda is critical ) Not scaled for the
+predictors. They should be standardized before running The model is less
+flexible as the lambda increases.
+
+-   Lasso Regression: Using this technique, with a lambda accurate, some
+    coefficients can become 0 and will reduce the variables used for the
+    model. ( more interpretable than ridge, less n of variables )
+
+```{r Ridge_Lasso}
+install.packages("glmnet")
+library("glmnet")
+
+x<- model.matrix(price~., data = df)[,-1]
+y<- df$price
+grid <- 10^seq(10,-2, length= 100)
+
+# Ridge
+
+lm_ridge<- glmnet(x,y,alpha = 0, lambda = grid)
+summary(lm_ridge)
+
+cv_fit<- cv.glmnet(x,y,alpha=0,lambda = grid)
+plot(cv_fit)
+
+opt_lambda<- cv_fit$lambda.min
+
+tss <- sum((y-mean(y))^2) 
+
+y_a <- predict(lm_ridge,s= opt_lambda, newx = x)
+
+res <- sum((y_a-y)^2)
+
+raq <- 1 - res/tss
+
+
+# Lasso
+
+lm_lasso <- glmnet(x,y, alpha = 1, lambda = grid)
+
+
+```
+
+## Module 8 Data preparation
+
+```{r Import_dataset}
+
+df<-read.csv("/home/quim/PycharmProjects/Machine learning/Complete ML in R/2. Classification/House-Price.csv", header = TRUE)
+
+str(df)
+
+
+```
+
+1.  The data and the dictionary
+
+Collect the data in tabular format with colnames using \_ instead of "
+", with simple recognizable names.
+
+Get only one datasaet with columns for predictors and rows or samples.
+It should be linked to a data dictionary. \
+- Definition o all the variables \
+- Identifier ( colname) \
+- Explanation o the categories of categorical variables.
+
+```{r EDD}
+
+# Extended data dictionary
+
+summary(df)
+boxplot(df$n_hot_rooms)
+
+pairs(~df$Sold+df$rainfall) # Outliers
+
+barplot(table(df$airport)) # Missing values
+
+barplot(table(df$bus_ter)) # only 1 category its's useless, 
+
+
+```
+
+```{r Outlier_treatment}
+# Capping and Flooring techniques
+uv <- 3*quantile(df$n_hot_rooms, 0.99)
+df$n_hot_rooms[df$n_hot_rooms>uv]<- uv
+summary(df$n_hot_rooms)
+
+lv<- 0.3*quantile(df$rainfall, 0.01)
+df$rainfall[df$rainfall<lv]<- lv
+summary(df$rainfall)
+
+```
+
+```{r Missing_value_imputation}
+# Replae with mean
+mean(df$n_hos_beds,na.rm =TRUE)
+which(is.na(df$n_hos_beds))
+
+df$n_hos_beds[is.na(df$n_hos_beds)]<-mean(df$n_hos_beds,na.rm =TRUE)
+summary(df$n_hos_beds)
+
+```
+
+```{r Variable_transformation}
+
+df$avg_dist <- (df$dist1+df$dist2+df$dist3+df$dist4)/4
+
+df2<-df[,-6:-9]
+df<- df2
+
+# Remove uninformative variable
+df<-df[,-13]
+colnames(df)
+
+```
+
+```{r Dummie_variable_creation}
+install.packages("dummies")
+library("dummies")
+
+df<- dummy.data.frame(df) # create a variable for eery category on all categorical variables
+# delete usless variables
+df<-df[,c(-8, -14)]
+
+```
+
+## Module 9: three models of classification.
+
+1.  Classification Models
+
+1.Logistic Regression
+
+2.Linear discriminant Analysis
+
+3.K nearest neighbor
+
+Prediction Question - Will the house be sol within three months of
+getting listed Inferential Question - How accurately can we estimate the
+effect of each of the predictor variables on the response variable
+
+2.Why can't we use Linear Regression
+
+Linear regression can't be used for more than two categories
+
+## Module 10 Logistic Regression
+
+1.  Sigmoid Function (0-1 range) Results interpretation is different
+    than on linear. Low changes due to outliers.
+
+Maximum Likelihood method - Linear regression - Ordinary least squares -
+Logistic Regression - Maximum Likelihood method
+
+```{r Training_simple_logistic_model}
+
+glm.fit = glm(Sold~price, data = df, family = binomial)
+summary(glm.fit)
+
+
+
+```
+
+Results: - B =0 no relationship P-value: - Ho = No relation between X
+and Y - Ha = Relationship between X and Y
+
+2.  Logistic with multiple predictors
+
+-   Use maximum likelihood to calculate Betas
+-   Fix te boundary condition as per business requirements
+
+```{r Multiple_logistic_regression}
+
+glm.fit = glm(Sold~., data = df, family = binomial)
+summary(glm.fit)
+
+
+
+
+```
+
+3.  Confusion Matrix Error type 1 \<- False Positive Error type 2 \<-
+    False Negative NO YES Total Npred TN T2E N Ypred T1E TP P Total N\*
+    P\*
+4.  Evaluating model performance
+
+FP rate \<- FP/N Type 1 error (1-specificity) TP rate \<- TP/P Type 2
+error (power, sensitivity, recall) Pos. Pred. val \<- TP/P\* Precision
+(1-false discovery proportion) Neg. Pred. val \<- TN/N\*
+
+ROC curve Area under the curve False positive - Y True positive - X
+(should be as near of 0,1 point as possible, maximum area)
+
+```{r Predicting_probabilities_Assessing_classes_Making_confusion_matrix}
+
+glm.probe <- predict(glm.fit, type = "response")
+glm.probe[1:10]
+glm.pred<- rep("NO",506)
+glm.pred[glm.probe>0.5] <- "YES"
+table(glm.pred, df$Sold) # confusion matrix
+
+
+
+
+
+```
+
+## Module 11 Discriminant lineal analysis (LDA)
+
+Conditional probability ( lowest possible theoretical error rate)
+
+```{r LDA}
+
+install.packages("MASS")
+library("MASS")
+
+#Linear discriminate analysis
+lda.fit <- lda(Sold~., data = df)
+lda.fit
+
+lda.pred <-predict(lda.fit, df)
+lda.pred$posterior
+
+lda.class <- lda.pred$class
+table(lda.class, df$Sold)
+
+sum(lda.pred$posterior[,1]>.8)
+
+## Quartile discriminate analisis
+qda.fit <- qda(Sold~., data = df)
+qda.fit
+
+qda.pred <-predict(qda.fit, df)
+qda.pred$posterior
+
+qda.class <- qda.pred$class
+table(qda.class, df$Sold)
+
+sum(qda.pred$posterior[,1]>.8)
+
+```
+
+## Module 12: K-nearest neighborhood
+
+1.  Test-Train Split
+
+Identify the minimum test error
+
+-   Validation set approach Random division of data into two parts Usual
+    split is 80:20 When to use - In case of large number of observations
+
+-   Leave one out cross validation Leaving one observation every time
+    from training set
+
+-   K-Fold validation Divide the data into K set We will keep one
+    testing and K-1 for training
+
+```{r Test-train}
+library(caTools)
+set.seed(0)
+split<- sample.split(df,SplitRatio = .8)
+
+train_set<- subset ( df, split == TRUE)
+test_set <- subset(df, split == FALSE)
+
+train.fit <- glm(Sold~., data = df, family = binomial)
+test_probe <- predict(train.fit, test_set, type = "response")
+
+test.pred = rep("NO",120)
+test.pred[test_probe>0.5] <- "YES"
+table(test.pred, test_set$Sold)
+
+```
+
+2.  K-Nearest neighbors
+
+distance between observations , scale matters (data should be
+standardized)
+
+```{r KNN}
+install.packages("class")
+library("class")
+
+trainX <- train_set[,-16]
+testX <- test_set[,-16]
+
+trainY <- train_set$Sold
+testY <- test_set$Sold
+
+k = 5
+
+trainX_s <- scale(trainX)
+testX_s <- scale(testX)
+
+set.seed(0)
+
+knn.pred <- knn(trainX_s, testX_s, trainY,k = k)
+
+table(knn.pred, testY)
+
+
+```
+
+## Model 13 Comparison of results from the 3 models
+
+1.  understanding the results of classification models
+
+## Module 14
+
+85%
+
+## Module 15 Basic decision trees
+
+-   regression tree (continuous quantitative target variable)
+-   classification tree (Discrete categorical target variables)
+
+1.Understanding regression trees - Top-down greedy approach that is
+known as recursive binary splitting - top-down because it begins at the
+top of the tree and then successively splits the predictor space - Each
+split is indicated via two new branches further down on the tree. - It
+is greedy because at each step of the tree-building process, the best
+spoiling is made at that articular step, rather than looking ahead and
+picking a split that ll lead to a better tree in some future step.
+
+STEPS: - Considers all predictors and all possible cut point values -
+Calculate RSS for each possibility - Selects the one with least RSS -
+Continues till stopping criteria is reached
+
+2.  Stopping criteria for controlling tree growth
+
+-   Minimum Observations at internal node
+-   Minimum observations at leaf node
+-   Maximum depth
+
+```{r data_import}
+
+movie <- read.csv("/home/quim/PycharmProjects/Machine learning/Complete ML in R/3. Decision Trees/Movie_regression.csv")
+summary(movie)
+
+movie$Time_taken[is.na(movie$Time_taken)]<- mean(movie$Time_taken, na.rm = TRUE)
+
+```
+
+```{r Splitting_data_into_Test_and_Train_set}
+
+library(caTools)
+set.seed(0)
+split <- sample.split(movie, SplitRatio = 0.8)
+train <- subset(movie, split == TRUE)
+test <- subset(movie, split == FALSE)
+
+```
+
+```{r Building_regression_tree}
+install.packages("rpart")
+install.packages("rpart.plot")
+library("rpart")
+library("rpart.plot")
+
+#Run regression tree modl on train set 
+regtree <- rpart(formula = Collection~., data = train, control = rpart.control(maxdepth = 3))
+
+#plot decision tree
+rpart.plot(regtree, box.palette = "RdBu", digits = -3)
+
+# Predict value at any point
+test$pred <- predict(regtree, test, type = "vector")
+
+MSE2 <- mean((test$pred - test$Collection)^2)
+
+```
+
+3.  Pruning a tree
+
+```{r Pruning_a_tree}
+
+fulltree <- rpart(formula = Collection~., data = train, control = rpart.control(cp = 0))
+rpart.plot(fulltree, box.palette = "RdBu", digits = -3)
+printcp(fulltree)
+plotcp(regtree)
+
+mincp <- regtree$cptable[which.min(regtree$cptable[,"xerror"]), "CP"]
+
+pruned.tree <- prune(regtree, cp = mincp)
+rpart.plot(pruned.tree,box.palette = "RdBu", digits = -3)
+
+test$fulltree <- predict(fulltree, test, type = "vector")
+MSE2 <- mean((test$fulltree - test$Collection)^2)
+
+test$pruned <- predict(pruned.tree, test, type = "vector")
+MSE2pruned <- mean((test$pruned - test$Collection)^2)
+
+
+#accuracy_postprun <- mean(test$pred == test$left)
+#data.frame(base_accuracy, accuracy_preprun, accuracy_postprun)
+
+```
+
+## Module 16 Simple classification trees
+
+-   Regression tree
+-   Classification tree
+
+Regression (resp. variable became the prediction for that class)
+Classification( We use the mode (most freq cat) of that region to
+predict the outcome)
+
+Methods: (recursive binary splitting) In regression RSS is used to
+decide the split
+
+In classification: \
+- Classification error rate Nº errors/total N \
+- Gini index (more sensitive) \
+- Cross entropy (more sensitive)
+
+```{r data_classification}
+df <- read.csv("/home/quim/PycharmProjects/Machine learning/Complete ML in R/3. Decision Trees/Movie_classification.csv")
+```
+
+```{r building_classification_trees }
+View(df)
+summary(df)
+
+# Imputation
+df$Time_taken[is.na(df$Time_taken)] <- mean(df$Time_taken, na.rm = TRUE)
+
+#Test-Trai sets
+library(caTools)
+set.seed(0)
+split <- sample.split(df, SplitRatio = 0.8)
+trainc <- subset(df, split == TRUE)
+testc <- subset(df, split == FALSE)
+
+#Classification tree
+classtree <- rpart(formula = Start_Tech_Oscar~., data = trainc, method = "class", control = rpart.control(maxdepth = 3))
+
+
+# plot decision tree
+rpart.plot(classtree, box.palette = "RdBu", digits = -3)
+
+#predict value at any point
+ testc$pred <- predict(classtree, testc, type = "class")
+
+table(testc$Start_Tech_Oscar, testc$pred)
+
+```
+
+Advantages and disadvantages of decision trees
+
+Advantages:
+
+-   Easy to explain
+
+<!-- -->
+
+-   More closely mirror human decision making other regression and
+    classification approaches
+
+-   Trees can easily handle qualitative predictors without the need to
+    create dummy variables
+
+Disadvantages:
+
+-   Trees generally do not have the same level of predictive accuracy as
+    same of the the region and classification approaches.
+
+## Module 17 Ensambling techniques
+
+### Bagging
+
+Concept: - If N observations have variance sigma sq (s\^2), then
+variance of mean these observations is (s\^2)/N
+
+Bootstrapping
+
+1.  While bagging pruning is not done , full length trees are grown
+
+2.Individual trees have high variance and low bias, average reduces the
+variance
+
+3.  In regression, we take the average of predicted values
+
+4.In classification, we take majority vote (i.e. most predicted class
+will be taken as the final prediction
+
+```{r Bagging}
+install.packages("randomForest")
+library("randomForest")
+set.seed(0)
+bagging <- randomForest(Collection~., data= train, mtry= 17)
+test$bagging <- predict(bagging, test)
+MSE2bagging <- mean((test$bagging - test$Collection)^2)
+bagging <- randomForest(Collection~., data= train, mtry= 17, importance = TRUE)
+
+```
+
+### Random forest
+
+Bagging create correlated trees
+
+Concept: We use subset of predictor variables so that we get different
+spits in each model.
+
+Thumb Rule for value of M:
+
+1.  For regression (P/3)
+2.  For classification (sqrt(P))
+3.  Don't forget to use your business knowledge if the variables are
+    highly correlated try a smaller value of M
+
+```{r Random_Forest}
+
+install.packages("randomForest")
+library("randomForest")
+
+randomfor <- randomForest(Collection~., data = train, ntree = 500)
+test$random <- predict(randomfor, test)
+MSE2random <- mean((test$random - test$Collection)^2)
+
+
+```
+
+### Boosting techniques
+
+Process of urninga weak learner into a strong learner:
+
+1.  Gradient boost
+
+    1.  Calculate residuals
+
+    2.  Tree after adjusting for residuals
+
+    3.  Final tree after adjusting residuals multiple times
+
+2.  Ada Boost
+
+    1.  Assign more weightage to miss-classified observations
+
+    2.  Retrain the tree after accounting for weightages
+
+    3.  Final tree after accounting for weightages N-1 Times
+
+3.  XG Boost
+
+Similar to Gradient boost
+
+XG-boost used more regularized model formalization to control
+over-fitting, which gives it better performance.
+
+Regularization - The cost function we are trying to optimize ( MSE in
+regression... ) also contains a penalty term for number of variables. In
+a way, we want to minimize the number of variables in final model along
+with the MSE or accuracy. This helps avoiding overfitting.
+
+XG-boost contains regularization terms in the cost function.
+
+```{r Gradient_Boosting}
+
+install.packages("gbm")
+library("gbm")
+
+
+set.seed(0)
+boosting <- gbm(Collection~., data= train, distribution = "gaussian", n.trees = 5000, interaction.depth = 4, shrinkage = 0.2, verbose = FALSE)
+
+test$boost <- predict(boosting, test, n.trees =5000)
+MSE2boost<- mean((test$boost - test$Collection)^2)
+
+```
+
+```{r Ada_Boosting}
+install.packages("adabag")
+library("adabag")
+trainc$Start_Tech_Oscar1 <- as.factor(trainc$Start_Tech_Oscar)
+
+adaboost <- boosting(Start_Tech_Oscar1~.-Start_Tech_Oscar,data = trainc, boos = TRUE)
+
+predata <- predict(adaboost, testc)
+table(predata$class, testc$Start_Tech_Oscar)
+
+t1 <- adaboost$trees[[1]]
+plot(t1)
+text(t1, pretty = 100)
+
+
+
+```
+
+```{r XG_Boost_Model}
+
+install.packages("xgboost")
+library("xgboost")
+trainY <- trainc$Start_Tech_Oscar == "1"
+trainX <- model.matrix(Start_Tech_Oscar~ .-1, data = trainc)
+
+testY <- testc$Start_Tech_Oscar == "1"
+testX <-model.matrix(Start_Tech_Oscar~ .-1, data = testc)
+colnames(testX)
+colnames(trainX)
+
+colnames(testX)[22]<- "Start_Tech_Oscar11"
+#delete additional variable
+
+Xmatrix <- xgb.DMatrix(data= trainX, label = trainY)
+Xmatrix_t <- xgb.DMatrix(data= testX, label = testY)
+
+Xgboosting <- xgboost(data= Xmatrix, # data
+                      nrounds = 50, # max iterations in boosting
+                      objective ="multi:softmax",
+                      eta = 0.3,
+                      num_class = 2,
+                      max_depth = 100)
+xgpred<- predict(Xgboosting, Xmatrix_t)
+table(testY,xgpred)
+
+```
+
+## Module 18 Concept
+
+### Maximum margin classification (Separable data)
+
+Maximal margin classifier:
+
+1.  Calculate the perpendicular distance of observations from hyperplane
+2.  Minimum value of distance is called margin
+3.  Choose the hyperplane with maximum value of margin
+
+Support vectors:
+
+1.  The observations which fall on margin are known as Support Vectors
+2.  These classifiers depend on support vectors only
+3.  That is why this technique is different from conventional ML
+    techniques
+
+Limitations of MMC:
+
+1.  MMC can't be used if the two classes are not separable by a
+    hyperplane
+2.  MMC is very sensitive to support vectors, an additional observation
+    can lead to a dramatic shift in the maximal margin hyperplane
+
+### Support vector classification (Non-separable data)
+
+Support vector classifier:
+
+-   What:
+
+    -   Support vector classifier is a soft margin classifier
+
+    -   We will allow some observations to be incorrectly classify or to
+        be on the wrong side of the margin
+
+-   How:
+
+    -   We can create a miss-classification budget (B)
+
+    -   We limit sum of distances of the points on the wrong side of the
+        margin (x1+ x2+ x3 +x4) \<B
+
+    -   We try to maximize margin while trying to stay within budget.
+
+    -   Usually in our software packages we use C (Cost - multiplier of
+        the error term ) which is inversely related to B
+
+-   Impact of C:
+
+    -   When C is small, margins will be wide and there will be many
+        support vectors and many miss-classified observations
+
+    -   When C is large, margins will be narrow and there will be narrow
+        and there will be fewer support vectors and fewer
+        miss-classified values
+
+    -   However, low cost value prevents overfitting and may give better
+        test set performance
+
+    -   We try to find optimal value of C at which we get vest test
+        performance.
+
+-   Limitations of SVC:
+
+    -   Support vector classifier is a linear classifier, it cannot
+        classify non linear separable data
+
+### Support vector machines (Non linear class boundaries)
+
+Kernel based SVM
+
+-   What:
+
+    -   Support vector machine (SVM) s an extension of the support
+        vector classifier which uses Kernels to create non linear
+        boundaries
+
+    -   Kernels - Some functional relationship between two observations.
+
+        Some popular Kernels are:
+
+        -   Linear
+
+            Linear kernel takes inner product of two observations ( it's
+            effectively a support vector classifier)
+
+        -   Polynomial
+
+            Polynomial Kernel uses power function to create non linear
+            boundaries
+
+        -   Radial
+
+            Radial Kernel uses radial function to create radial
+            boundaries
+
+            Gamma defines how much influence a single training example
+            has. The larger gamma is, the closer other examples must be
+            to be affected.
+
+## Module 19 Creation of a machine model of support vectors
+
+### Data
+
+```{r The_Data_set}
+# Load data
+movie <- read.csv("~/PycharmProjects/Machine learning/Complete ML in R/4. Support Vector Machines/Movie_classification.csv")
+
+# Data preprocessing
+summary(movie)
+movie$Time_taken[is.na(movie$Time_taken)]<- mean(movie$Time_taken, na.rm = TRUE)
+```
+
+```{r Test-train_split}
+
+# Test- Train Split
+library("caTools")
+set.seed(0)
+split <- sample.split(movie, SplitRatio = 0.8)
+trainc <- subset(movie, split == TRUE)
+testc <- subset(movie, split == FALSE)
+
+
+```
+
+### SVM classification
+
+```{r SVM_Classification_model_Using_Liner_kernel}
+
+install.packages("e1071")
+library("e1071")
+
+trainc$Start_Tech_Oscar <- as.factor(trainc$Start_Tech_Oscar)
+
+svmfit<- svm(Start_Tech_Oscar~., data= trainc, kernel = "linear", cost = 1 , scale = TRUE)
+summary(svmfit)
+
+#Predicting on test set
+
+ypred <- predict(svmfit, testc)
+table(predict = ypred, truth = testc$Start_Tech_Oscar)
+
+# To check the support vectors
+svmfit$index
+```
+
+```{r Hyperparameter_Tuning_for_linear_kernel}
+set.seed(0)
+tune.out <- tune(svm, Start_Tech_Oscar~., data = trainc, kernel = "linear", ranges = list(cost=c(0.01,0.1,1.10,100)))
+
+bestmod <- tune.out$best.model
+summary(bestmod)
+
+ypredL <- predict(bestmod, testc)
+table(predict = ypredL, truth = testc$Start_Tech_Oscar)
+
+```
+
+```{r Polynomial_kernel}
+
+smvfitP <- svm(Start_Tech_Oscar~., data= trainc, kernel = "polynomial", cost = 1 , degree = 2)
+
+
+set.seed(0)
+tune.outP <- tune(svm, Start_Tech_Oscar~., data = trainc, cross =4, kernel = "linear", ranges = list(cost=c(0.01,0.1,1.10,100), degree = c(0.5,1,2,3,5)))
+
+bestmodP <- tune.outP$best.model
+summary(bestmodP)
+
+ypredP <- predict(bestmodP, testc)
+table(predict = ypredP, truth = testc$Start_Tech_Oscar)
+
+
+
+```
+
+```{r Radial_kernel}
+
+smvfitR <- svm(Start_Tech_Oscar~., data= trainc, kernel = "radial", gamma = 1, cost = 1)
+
+
+set.seed(0)
+tune.outR <- tune(svm, Start_Tech_Oscar~., data = trainc, kernel = "radial", ranges = list(cost=c(0.01,0.1,1.10,100), gamma = c(0.01,0.5,1,3,10,50)), cross = 4)
+
+bestmodR <- tune.outR$best.model
+summary(bestmodR)
+
+ypredR <- predict(bestmodR, testc)
+table(predict = ypredR, truth = testc$Start_Tech_Oscar)
+
+```
+
+### SVM regression
+
+```{r Dataset_for_regression}
+
+# Load data
+df <- read.csv("~/PycharmProjects/Machine learning/Complete ML in R/4. Support Vector Machines/Movie_regression.csv")
+
+# Data preprocessing
+summary(df)
+df$Time_taken[is.na(movie$Time_taken)]<- mean(movie$Time_taken, na.rm = TRUE)
+
+# Test-train split
+
+set.seed(0)
+split <- sample.split(df, SplitRatio = 0.8)
+train <- subset(df, split == TRUE)
+test <- subset(df, split == FALSE)
+
+svmfitR <- svm(Collection~., data = train, kernel = "linear", cost =0.01, gamma = 1, scale = TRUE)
+summary(svmfit)
+
+ypredR <-predict(svmfitR, test)
+mse <- mean((ypredR - test$Collection)^2)
+
+dim(test)
+length(ypredR)
+```
