@@ -1,48 +1,164 @@
-#
-# This is a Shiny web application. You can run the application by clicking
-# the 'Run App' button above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    http://shiny.rstudio.com/
-#
+
 
 library(shiny)
-
-# Define UI for application that draws a histogram
-ui <- fluidPage(
+library(shinythemes)
+# 
+ui <- fluidPage(theme = shinytheme("cyborg"),
+  navbarPage(
+  theme = "Cyborg",  # <--- To use a theme, uncomment this
+  "Machine learning app name",
+  tabPanel("DATA UPLOAD",
    
-   # Application title
-   titlePanel("Old Faithful Geyser Data"),
+   # App title ----
+  titlePanel(h1("UPLOAD DATA")),
+  
+   ################################################################
+   #UPLOAD FILES
+   ################################################################
    
-   # Sidebar with a slider input for number of bins 
-   sidebarLayout(
-      sidebarPanel(
-         sliderInput("bins",
-                     "Number of bins:",
-                     min = 1,
-                     max = 50,
-                     value = 30)
-      ),
+  # Sidebar layout with input and output definitions ----
+  sidebarLayout(
+    
+    # Sidebar panel for inputs ----
+    sidebarPanel(h3("UPLOAD CONFIGURATION"),
       
-      # Show a plot of the generated distribution
-      mainPanel(
-         plotOutput("distPlot")
-      )
-   )
-)
+      # Input: Select a file ----
+      fileInput("file1", "Choose CSV File",
+                multiple = TRUE,
+                accept = c("text/csv",
+                           "text/comma-separated-values,text/plain",
+                           ".csv")),
+      
+      # Horizontal line ----
+      tags$hr(),
+      
+      # Input: Checkbox if file has header ----
+      checkboxInput("header", "Header", TRUE),
+      
+      # Input: Select separator ----
+      radioButtons("sep", "Separator",
+                   choices = c(Comma = ",",
+                               Semicolon = ";",
+                               Tab = "\t"),
+                   selected = ","),
+      
+      # Input: Select quotes ----
+      radioButtons("quote", "Quote",
+                   choices = c(None = "",
+                               "Double Quote" = '"',
+                               "Single Quote" = "'"),
+                   selected = '"'),
+      
+      # Horizontal line ----
+      tags$hr(),
+      
+      # Input: Select number of rows to display ----
+      radioButtons("disp", "Display",
+                   choices = c(Head = "head",
+                               All = "all"),
+                   selected = "head")
+      
+    ),
+    
+    # Main panel for displaying outputs ----
+    mainPanel(h3("DATA PREVIEW"),
+      
+      # Output: Data file ----
+      tableOutput("contents")
+      )) # mainPanel
+  
+  ), # Navbar 1, tabPanel
+  
+  
+  ###############################################################
+  # DATA DESCRIPTION
+  ###############################################################
+  tabPanel("DATA DESCRIPTION", 
+           sidebarPanel(h3("This panel is intentionally left blank")
+  ),
+  mainPanel(h3("This panel is intentionally left blank"))
+  
+  ),
+  
+  
+  ###############################################################
+  # DATA PREPROCESSING
+  ###############################################################
+  tabPanel("DATA PREPROCESSINB",  
+           sidebarPanel(h3("This panel is intentionally left blank")
+           ),
+           mainPanel(h3("This panel is intentionally left blank"))
+           
+  ),
+  ###############################################################
+  # MACHINE LEARNING MODELS CONFIGURATION
+  ###############################################################
+  tabPanel("MACHINE LEARNING MODELS CONFIGURATION",  
+           sidebarPanel(h3("This panel is intentionally left blank")
+           ),
+           mainPanel(h3("This panel is intentionally left blank"))
+           
+  ),
+  ###############################################################
+  # MODEL SELECTION
+  ###############################################################
+  tabPanel("MODEL SELECTION",  
+           sidebarPanel(h3("This panel is intentionally left blank")
+           ),
+           mainPanel(h3("This panel is intentionally left blank"))
+           
+  ),
+  ###############################################################
+  # PREDICTIONS
+  ###############################################################
+  tabPanel("PREDICTIONS",  
+           sidebarPanel(h3("This panel is intentionally left blank")
+           ),
+           mainPanel(h3("This panel is intentionally left blank"))
+           
+  ),
+  ###############################################################
+  # DOWNLOAD MODEL
+  ###############################################################
+  tabPanel("DOWNLOAD MODEL",  
+           sidebarPanel(h3("This panel is intentionally left blank")
+           ),
+           mainPanel(h3("This panel is intentionally left blank"))
+           
+  )
+  ) # navbarPage
+  )
+ 
 
-# Define server logic required to draw a histogram
+# Define server l
 server <- function(input, output) {
    
-   output$distPlot <- renderPlot({
-      # generate bins based on input$bins from ui.R
-      x    <- faithful[, 2] 
-      bins <- seq(min(x), max(x), length.out = input$bins + 1)
-      
-      # draw the histogram with the specified number of bins
-      hist(x, breaks = bins, col = 'darkgray', border = 'white')
-   })
+  ## UPLOAD FILES
+  output$contents <- renderTable({
+    
+    # input$file1 will be NULL initially. After the user selects
+    # and uploads a file, head of that data file by default,
+    # or all rows if selected, will be shown.
+    
+    req(input$file1)
+    
+    input_data <- read.csv(input$file1$datapath,
+                   header = input$header,
+                   sep = input$sep,
+                   quote = input$quote)
+    
+    if(input$disp == "head") {
+      return(head(df))
+    }
+    else {
+      return(df)
+    }
+    
+  })
+  output$plot <- renderPlot({
+    hist(as.data.frame(input_data)[,6])
+  })
+  
 }
 
 # Run the application 
