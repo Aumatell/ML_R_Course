@@ -2,6 +2,7 @@
 
 library(shiny)
 library(shinythemes)
+library(DT)
 # 
 ui <- fluidPage(theme = shinytheme("cyborg"),
   navbarPage(
@@ -64,7 +65,8 @@ ui <- fluidPage(theme = shinytheme("cyborg"),
     mainPanel(h3("DATA PREVIEW"),
       
       # Output: Data file ----
-      tableOutput("contents")
+      tableOutput("contents"),
+      
       )) # mainPanel
   
   ), # Navbar 1, tabPanel
@@ -74,9 +76,18 @@ ui <- fluidPage(theme = shinytheme("cyborg"),
   # DATA DESCRIPTION
   ###############################################################
   tabPanel("DATA DESCRIPTION", 
-           sidebarPanel(h3("This panel is intentionally left blank")
-  ),
-  mainPanel(h3("This panel is intentionally left blank"))
+    sidebarPanel(h3("SELECT THE VARIABLE TO EXPLORE"),
+      # Input: Select quotes ----
+      uiOutput("variables")
+      
+  ), #sidebar close
+  
+  mainPanel(h3("This panel is intentionally left blank"),
+            tableOutput("statistics"),
+            plotOutput("plot")
+            
+            
+            ) #mainpanel close
   
   ),
   
@@ -126,38 +137,71 @@ ui <- fluidPage(theme = shinytheme("cyborg"),
            mainPanel(h3("This panel is intentionally left blank"))
            
   )
-  ) # navbarPage
+  ) # navbarPage)
   )
- 
 
-# Define server l
+# Define server 
 server <- function(input, output) {
-   
-  ## UPLOAD FILES
-  output$contents <- renderTable({
+  
+  ################################################################
+  # UPLOAD FILES
+  ################################################################
+  
+    ## UPLOAD FILES
+    input_data <- reactive({
+      df<-read.csv(input$file1$datapath,
+      header = input$header,
+      sep = input$sep,
+      quote = input$quote)
+      return(df)
+    })
+      
+    output$variables <- renderUI({
+      radioButtons("dynamic", "NULL", choiceNames = colnames(input_data()), 
+                          choiceValues =  seq(1,length(colnames(input_data())),by = 1))
+      
+    })
+    
+  ##   Table preview
+    
+   output$contents <- renderTable({
     
     # input$file1 will be NULL initially. After the user selects
     # and uploads a file, head of that data file by default,
     # or all rows if selected, will be shown.
-    
-    req(input$file1)
-    
-    input_data <- read.csv(input$file1$datapath,
-                   header = input$header,
-                   sep = input$sep,
-                   quote = input$quote)
-    
+
     if(input$disp == "head") {
-      return(head(df))
+      return(head(input_data()))
     }
     else {
-      return(df)
+      return(input_data())
     }
     
   })
-  output$plot <- renderPlot({
-    hist(as.data.frame(input_data)[,6])
+   
+   # Histogram( to delete)
+  output$statistics <- renderPrint({
+    dataf<-input_data()
+    if (class(dataf[,as.numeric(input$dynamic)]) == "numeric" ){
+      return(summary(dataf[,as.numeric(input$dynamic)]))
+  }else{
+      return(table(as.factor(dataf[,as.numeric(input$dynamic)])))
+    }
+    
   })
+  
+  output$plot <- renderPlot({
+    dataf<-input_data()
+    if (class(dataf[,as.numeric(input$dynamic)]) == "numeric" ){
+      return(hist(dataf[,as.numeric(input$dynamic)]))
+    }else{
+      return(boxplot(table(as.factor(dataf[,as.numeric(input$dynamic)]))))
+    }
+  })
+  ###############################################################
+  # DATA DESCRIPTION
+  ###############################################################
+
   
 }
 
