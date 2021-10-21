@@ -78,7 +78,10 @@ ui <- fluidPage(theme = shinytheme("cyborg"),
   tabPanel("DATA DESCRIPTION", 
     sidebarPanel(h3("SELECT THE VARIABLE TO EXPLORE"),
       # Input: Select quotes ----
-      uiOutput("variables")
+      uiOutput("variables"),
+      radioButtons("NumOrFac", "Num", 
+                   choiceNames = c("NUMERICAL", "CATEGORICAL"), 
+                   choiceValues = c("Num","Fac"))
       
   ), #sidebar close
   
@@ -159,8 +162,8 @@ server <- function(input, output) {
     output$variables <- renderUI({
       radioButtons("dynamic", "NULL", choiceNames = colnames(input_data()), 
                           choiceValues =  seq(1,length(colnames(input_data())),by = 1))
-      
     })
+    
     
   ##   Table preview
     
@@ -182,20 +185,28 @@ server <- function(input, output) {
    # Histogram( to delete)
   output$statistics <- renderPrint({
     dataf<-input_data()
-    if (class(dataf[,as.numeric(input$dynamic)]) == "numeric" ){
-      return(summary(dataf[,as.numeric(input$dynamic)]))
+    if (input$NumOrFac == "Num" ){
+      dataf[,as.numeric(input$dynamic)] <- as.numeric(dataf[,as.numeric(input$dynamic)])
+      as.table(summary(dataf[,as.numeric(input$dynamic)]))
   }else{
-      return(table(as.factor(dataf[,as.numeric(input$dynamic)])))
+      dataf[,as.numeric(input$dynamic)] <- as.factor(dataf[,as.numeric(input$dynamic)])
+      as.table(table(as.factor(dataf[,as.numeric(input$dynamic)])))
     }
     
   })
   
   output$plot <- renderPlot({
     dataf<-input_data()
-    if (class(dataf[,as.numeric(input$dynamic)]) == "numeric" ){
-      return(hist(dataf[,as.numeric(input$dynamic)]))
+    if (input$NumOrFac == "Num"){
+      par(2,1)
+      dataf[,as.numeric(input$dynamic)] <- as.numeric(dataf[,as.numeric(input$dynamic)])
+      hist(dataf[,as.numeric(input$dynamic)], breaks = length(unique(dataf[,as.numeric(input$dynamic)])))
+      boxplot(dataf[,as.numeric(input$dynamic)])
     }else{
-      return(boxplot(table(as.factor(dataf[,as.numeric(input$dynamic)]))))
+      dataf[,as.numeric(input$dynamic)] <- as.factor(dataf[,as.numeric(input$dynamic)])
+      Table <-table(dataf[,as.numeric(input$dynamic)])
+      
+      plot(Table)
     }
   })
   ###############################################################
