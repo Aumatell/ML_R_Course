@@ -231,7 +231,7 @@ server <- function(input, output) {
     })
     
     
-    
+    ## hola
     
     
     output$conditions <- renderUI({
