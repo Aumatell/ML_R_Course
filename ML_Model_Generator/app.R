@@ -50,6 +50,10 @@ ui <- fluidPage(theme = shinytheme("cyborg"),
                                "Single Quote" = "'"),
                    selected = '"'),
       
+      radioButtons("transp", "Transposition",
+                   choices = c("No" = 'False',
+                               "Yes" = "True"),
+                   selected = 'False'),
       # Horizontal line ----
       tags$hr(),
       
@@ -79,6 +83,7 @@ ui <- fluidPage(theme = shinytheme("cyborg"),
     sidebarPanel(h3("SELECT THE VARIABLE TO EXPLORE"),
       # Input: Select quotes ----
       uiOutput("variables"),
+      tags$hr(),
       radioButtons("NumOrFac", "Num", 
                    choiceNames = c("NUMERICAL", "CATEGORICAL"), 
                    choiceValues = c("Num","Fac"))
@@ -87,7 +92,9 @@ ui <- fluidPage(theme = shinytheme("cyborg"),
   
   mainPanel(h3("This panel is intentionally left blank"),
             tableOutput("statistics"),
-            plotOutput("plot")
+            tags$hr(),
+            plotOutput("plot"),
+            plotOutput("plot2")
             
             
             ) #mainpanel close
@@ -99,7 +106,43 @@ ui <- fluidPage(theme = shinytheme("cyborg"),
   # DATA PREPROCESSING
   ###############################################################
   tabPanel("DATA PREPROCESSINB",  
-           sidebarPanel(h3("This panel is intentionally left blank")
+           sidebarPanel(h3("This panel is intentionally left blank"),
+                        radioButtons("Trimout", "TRIMMING OF OUTLIERS", 
+                                     choiceNames = c("YES", "NO"), 
+                                     choiceValues = c("True","False"),
+                                     selected = "True"),
+                        tags$hr(),
+                        radioButtons("Imputations", "IMPUTATION", 
+                                     choiceNames = c("ZEROS", "MEAN", "SEGMENTED"), 
+                                     choiceValues = c("Zeros","Mean", "Segmented"),
+                                     selected = "Mean"),
+                        tags$hr(),
+                        radioButtons("Seasonality", "SEASONALITY", 
+                                     choiceNames = c("YES", "NO"), 
+                                     choiceValues = c("True","False"),
+                                     selected = "False")
+                        
+           ), #sidebar pannel end
+           mainPanel(h3("This panel is intentionally left blank"),
+                     uiOutput("selection"),
+                     tags$hr(),
+                     uiOutput("response")
+                     ) # main panel end
+           
+  ), # tabpanel end
+  ###############################################################
+  # BIVARIATE ANALYSIS
+  ###############################################################
+  tabPanel("BIVARIATE ANALYSIS",  
+           sidebarPanel(h3("This panel is intentionally left blank"),
+                        uiOutput("variables1"),
+                        uiOutput("variables2"),
+                        tags$hr(),
+                        radioButtons("bivariate", "SELECT MODIFICATION IF NEEDED", 
+                                     choiceNames = c("ZEROS", "MEAN", "SEASONALITY"), 
+                                     choiceValues = c("Zeros", "Mean", "Seasonality")),
+                        actionButton("Modify_variable", "RUN FOR THE SELECTED VARIABLE")
+                        
            ),
            mainPanel(h3("This panel is intentionally left blank"))
            
@@ -108,7 +151,10 @@ ui <- fluidPage(theme = shinytheme("cyborg"),
   # MACHINE LEARNING MODELS CONFIGURATION
   ###############################################################
   tabPanel("MACHINE LEARNING MODELS CONFIGURATION",  
-           sidebarPanel(h3("This panel is intentionally left blank")
+           sidebarPanel(h3("This panel is intentionally left blank"),
+                        uiOutput("variables3"),
+                        uiOutput("conditions")
+                        
            ),
            mainPanel(h3("This panel is intentionally left blank"))
            
@@ -158,12 +204,49 @@ server <- function(input, output) {
       quote = input$quote)
       return(df)
     })
-      
+      ## INPUTS DEPENDENTS ON THE DATA FRAME
     output$variables <- renderUI({
       radioButtons("dynamic", "NULL", choiceNames = colnames(input_data()), 
                           choiceValues =  seq(1,length(colnames(input_data())),by = 1))
     })
     
+    output$selection <- renderUI({
+      checkboxGroupInput("inputvariables", "VARIABLES SELECTED TO TRAIN THE MODEL", choiceNames = colnames(input_data()), 
+                   choiceValues = colnames(input_data()) )
+    })
+    
+    output$response <- renderUI({
+      selectInput("responsevariables", "RESPONSE VARIABLE SELECTED TO TRAIN THE MODEL", colnames(input_data()))
+    })
+    
+    output$variables1 <- renderUI({
+      selectInput("var1", "VARIABLE 1", colnames(input_data()))
+    })
+    
+    output$variables2 <- renderUI({
+      selectInput("var2", "VARIABLE 2", colnames(input_data()[!colnames(input_data()) %in% input$var1]))
+    })
+    output$variables3 <- renderUI({
+      selectInput("var3", "VARIABLE 3", c("REG","CLAS"))
+    })
+    
+    
+    
+    
+    
+    output$conditions <- renderUI({
+      
+      for (i in input$var3){
+        
+        if (i == ""){
+          conditionalPanel(condition = "input.var3")
+        }  
+      
+        
+        
+        
+      }
+      })
     
   ##   Table preview
     
@@ -181,8 +264,10 @@ server <- function(input, output) {
     }
     
   })
+  ###############################################################
+  # DATA DESCRIPTION
+  ###############################################################
    
-   # Histogram( to delete)
   output$statistics <- renderPrint({
     dataf<-input_data()
     if (input$NumOrFac == "Num" ){
@@ -201,7 +286,9 @@ server <- function(input, output) {
       par(2,1)
       dataf[,as.numeric(input$dynamic)] <- as.numeric(dataf[,as.numeric(input$dynamic)])
       hist(dataf[,as.numeric(input$dynamic)], breaks = length(unique(dataf[,as.numeric(input$dynamic)])))
-      boxplot(dataf[,as.numeric(input$dynamic)])
+      output$plot2 <- renderPlot({
+        boxplot(dataf[,as.numeric(input$dynamic)])
+      })
     }else{
       dataf[,as.numeric(input$dynamic)] <- as.factor(dataf[,as.numeric(input$dynamic)])
       Table <-table(dataf[,as.numeric(input$dynamic)])
@@ -209,9 +296,7 @@ server <- function(input, output) {
       plot(Table)
     }
   })
-  ###############################################################
-  # DATA DESCRIPTION
-  ###############################################################
+
 
   
 }
